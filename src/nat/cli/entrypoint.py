@@ -26,9 +26,11 @@
 import logging
 import sys
 import time
+from importlib.metadata import entry_points
 
 import click
 import nest_asyncio
+from click_plugins import with_plugins
 
 from .commands.configure.configure import configure_command
 from .commands.evaluate import eval_command
@@ -71,6 +73,7 @@ def get_version():
         return "unknown"
 
 
+@with_plugins(entry_points(group='nat.cli_plugins'))
 @click.group(name="nat", chain=False, invoke_without_command=True, no_args_is_help=True)
 @click.version_option(version=get_version())
 @click.option('--log-level',
