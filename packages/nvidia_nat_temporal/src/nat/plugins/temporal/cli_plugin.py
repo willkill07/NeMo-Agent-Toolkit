@@ -41,6 +41,9 @@ def worker_command(_ctx: click.Context, task_queue: str, namespace: str, tempora
         from temporalio.worker import UnsandboxedWorkflowRunner
         from temporalio.worker import Worker
 
+        from nat.plugins.temporal.temporal_activities import run_nat_workflow_as_activity
+        from nat.plugins.temporal.temporal_workflow_function import NATWorkflow
+
         logger.info("Starting Temporal worker for NAT workflows")
         logger.info("Task queue: %s", task_queue)
         logger.info("Namespace: %s", namespace)
@@ -52,6 +55,8 @@ def worker_command(_ctx: click.Context, task_queue: str, namespace: str, tempora
         worker = Worker(
             client,
             task_queue=task_queue,
+            workflows=[NATWorkflow],
+            activities=[run_nat_workflow_as_activity],
             workflow_runner=UnsandboxedWorkflowRunner(),
         )
 
@@ -98,7 +103,7 @@ def run_command(_ctx: click.Context,
 
         from temporalio.client import Client
 
-        from .temporal_function import NATWorkflow
+        from .temporal_workflow_function import NATWorkflow
 
         logger.info("Starting NAT workflow via Temporal")
         logger.info("Config file: %s", config_file)
@@ -110,14 +115,16 @@ def run_command(_ctx: click.Context,
 
         try:
             # Generate workflow ID if not provided
-            actual_workflow_id = workflow_id or f"nat-workflow-{uuid.uuid4()}"
+            actual_workflow_id = workflow_id or f"nat-temporal-workflow-{uuid.uuid4()}"
 
             logger.info("Starting workflow with ID: %s", actual_workflow_id)
 
             # Start the workflow
             handle = await client.start_workflow(
                 NATWorkflow.run,
-                args=[str(config_file), input],
+                arg={
+                    "config_file": str(config_file), "input": input
+                },
                 id=actual_workflow_id,
                 task_queue=task_queue,
                 execution_timeout=timedelta(seconds=timeout),
@@ -153,14 +160,14 @@ def activity_command(_ctx: click.Context, config_file: str, input: str):
     """Run a NAT workflow directly as a Temporal activity"""
 
     async def run_activity():
-        from .temporal_activities import run_nat_workflow_activity
+        from .temporal_activities import run_nat_workflow_as_activity
 
         logger.info("Running NAT workflow as activity")
         logger.info("Config file: %s", config_file)
 
         try:
             # Run the activity directly (outside of temporal context for testing)
-            result = await run_nat_workflow_activity(config_file, input)
+            result = await run_nat_workflow_as_activity(config_file, input)
 
             logger.info("Activity completed successfully")
             click.echo("Activity Result:")

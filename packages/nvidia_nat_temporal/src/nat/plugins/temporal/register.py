@@ -18,7 +18,4 @@
 
 # Import any providers which need to be automatically registered here
 
-from .function_register import register_temporal_functions
-
-# Register temporal functions when module is imported
-register_temporal_functions()
+from . import temporal_workflow_function

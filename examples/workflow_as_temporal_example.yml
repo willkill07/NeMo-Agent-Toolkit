@@ -26,9 +26,10 @@ llms:
 functions:
   # Using a sub-workflow as a tool
   math_solver:
-    _type: temporal
+    _type: temporal_workflow
     config_file: "examples/getting_started/simple_calculator/configs/config.yml"
-    description: "A simple calculator that can perform basic calculations"
+    description: "A simple calculator that can perform basic calculations. Input should be a string representation of a mathematical expression."
+    workflow_id: "math_solver"
 
 workflow:
   _type: react_agent

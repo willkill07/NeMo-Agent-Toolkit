@@ -17,11 +17,15 @@ import logging
 import uuid
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
 from temporalio import workflow
 from temporalio.client import Client
 
-from .data_models import TemporalFunctionConfig
+from nat.builder.builder import Builder
+from nat.cli.register_workflow import register_function
+
+from .data_models import TemporalWorkflowFunctionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +37,7 @@ class NATWorkflow:
     """
 
     @workflow.run
-    async def run(self, config_file: str, input_data: str) -> str:
+    async def run(self, data: dict[str, Any]) -> str:
         """
         Run a NAT workflow as a temporal workflow.
 
@@ -43,13 +47,17 @@ class NATWorkflow:
         Returns:
             The output from the workflow execution
         """
+        config_file = data.get("config_file", None)
+        input_data = data.get("input", None)
+        if config_file is None or input_data is None:
+            raise ValueError("config_file and input are required")
         logger.info("Starting NAT workflow from config: %s", config_file)
 
         # Import the activity here to avoid circular imports
-        from .temporal_activities import run_nat_workflow_activity
+        from .temporal_activities import run_nat_workflow_as_activity
         # Run the NAT workflow as a temporal activity
         result = await workflow.execute_activity(
-            run_nat_workflow_activity,
+            run_nat_workflow_as_activity,
             args=[config_file, input_data],
             start_to_close_timeout=timedelta(hours=1),  # Maximum time for activity to complete
             heartbeat_timeout=timedelta(seconds=60),  # Send heartbeat every 60 seconds
@@ -59,7 +67,8 @@ class NATWorkflow:
         return result
 
 
-async def temporal_function(config: TemporalFunctionConfig, _builder):
+@register_function(config_type=TemporalWorkflowFunctionConfig)
+async def temporal_workflow_function(config: TemporalWorkflowFunctionConfig, _builder: Builder):
     """
     Create a temporal function that can run another entire workflow/agent as a child temporal workflow.
 
@@ -77,8 +86,10 @@ async def temporal_function(config: TemporalFunctionConfig, _builder):
         raise FileNotFoundError(f"Config file not found: {config.config_file}")
 
     # Create temporal client
-    temporal_client = await Client.connect(target_host=f"{config.host}:{config.port}",
-                                           namespace=config.temporal_namespace)
+    temporal_client = await Client.connect(target_host=config.address, namespace=config.temporal_namespace)
+
+    invocation_count = [0]
+    workflow_id_prefix = config.workflow_id or f"nat-temporal-workflow-function-{uuid.uuid4()}"
 
     async def _temporal_function(input_data: str) -> str:
         """
@@ -93,13 +104,15 @@ async def temporal_function(config: TemporalFunctionConfig, _builder):
         logger.debug("Executing temporal function with input: %s", input_data)
 
         try:
-            # Generate workflow ID if not provided
-            workflow_id = config.workflow_id or f"nat-workflow-{uuid.uuid4()}"
+            workflow_id = f"{workflow_id_prefix}-{invocation_count[0]}"
+            invocation_count[0] += 1
 
             # Start the child workflow
             handle = await temporal_client.start_workflow(
                 NATWorkflow.run,
-                args=[config.config_file, input_data],
+                arg={
+                    "config_file": config.config_file, "input": input_data
+                },
                 id=workflow_id,
                 task_queue=config.task_queue,
                 execution_timeout=timedelta(seconds=config.execution_timeout),
@@ -111,7 +124,7 @@ async def temporal_function(config: TemporalFunctionConfig, _builder):
             result = await handle.result()
 
             logger.debug("Temporal function completed with result: %s", result)
-            return str(result)
+            return result
 
         except Exception as e:
             logger.error("Error executing temporal function: %s", e)

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 @activity.defn
-async def run_nat_workflow_activity(config_file: str, input_data: str) -> str:
+async def run_nat_workflow_as_activity(config_file: str, input_data: str) -> str:
     """
     Temporal activity that runs a NAT workflow from a configuration file.
 

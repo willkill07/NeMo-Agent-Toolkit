@@ -13,13 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pydantic import BaseModel
 from pydantic import Field
 
 from nat.data_models.function import FunctionBaseConfig
 
 
-class TemporalFunctionConfig(FunctionBaseConfig, name="temporal"):
+class TemporalWorkflowFunctionConfig(FunctionBaseConfig, name="temporal_workflow"):
     """
     Configuration for the temporal function that allows running a child Temporal workflow
     that executes another agent/workflow loaded from a config file.
@@ -27,8 +26,7 @@ class TemporalFunctionConfig(FunctionBaseConfig, name="temporal"):
 
     config_file: str = Field(
         description="Path to the configuration file for the workflow to run as a child temporal workflow")
-    host: str = Field(default="localhost", description="Temporal server host")
-    port: int = Field(default=7233, description="Temporal server port")
+    address: str = Field(default="localhost:7233", description="Temporal server address")
     workflow_id: str | None = Field(
         default=None,
         description="Unique identifier for the temporal workflow. If not provided, a UUID will be generated")
@@ -39,15 +37,3 @@ class TemporalFunctionConfig(FunctionBaseConfig, name="temporal"):
                                    description="Maximum execution time for the workflow in seconds (default: 1 hour)")
     description: str = Field(default="Temporal function that runs another agent as a child workflow",
                              description="Description of this temporal function")
-
-
-class TemporalActivityConfig(BaseModel):
-    """
-    Configuration for temporal activities that run NAT workflows.
-    """
-
-    config_file: str = Field(description="Path to the NAT configuration file")
-    input_data: str = Field(description="Input data to pass to the workflow")
-    task_queue: str = Field(default="nat-workflow-queue", description="Name of the temporal task queue")
-    execution_timeout: int = Field(default=3600,
-                                   description="Maximum execution time for the workflow in seconds (default: 1 hour)")
