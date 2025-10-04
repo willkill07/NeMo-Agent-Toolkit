@@ -17,7 +17,7 @@ limitations under the License.
 
 # Building an Agentic System using NeMo Agent Toolkit
 
-Through these series of notebooks, we demonstrate how you can use the NeMo Agent Toolkit to build, connect, evaluate, profile and deploy an agentic system.
+Through these series of notebooks, we demonstrate how you can use the NeMo Agent toolkit to build, connect, evaluate, profile and deploy an agentic system.
 
 We showcase the building blocks that make up the agentic system, including tools, agents, workflows, and observability.
 
