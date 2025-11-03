@@ -120,6 +120,40 @@ cli.add_command(start_command.get_command(None, "console"), name="run")  # type:
 cli.add_command(start_command.get_command(None, "fastapi"), name="serve")  # type: ignore
 
 
+# Dynamically load CLI commands from plugins
+def _load_cli_plugins():
+    """Load CLI commands from plugins registered via entry points."""
+    import importlib.metadata
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        entry_points = importlib.metadata.entry_points()
+        cli_plugins = list(entry_points.select(group="nat.cli"))
+
+        for entry_point in cli_plugins:
+            try:
+                logger.debug("Loading CLI plugin '%s' from entry point '%s'...", entry_point.name, entry_point.module)
+
+                # Load the module and get the register function
+                register_fn = entry_point.load()
+
+                # Call the register function to get the command
+                if callable(register_fn):
+                    command = register_fn()
+                    if command is not None:
+                        cli.add_command(command)
+                        logger.debug("Registered CLI command '%s'", command.name)
+
+            except Exception as e:
+                logger.warning("Failed to load CLI plugin '%s': %s", entry_point.name, e)
+    except Exception as e:
+        logger.debug("No CLI plugins found or error loading them: %s", e)
+
+
+_load_cli_plugins()
+
+
 @cli.result_callback()
 @click.pass_context
 def after_pipeline(ctx: click.Context, pipeline_start_time: float, *_, **__):

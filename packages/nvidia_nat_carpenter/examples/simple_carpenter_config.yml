@@ -1,0 +1,36 @@
+gui:
+  title: 'Tutorial'
+  top_level: TutorialAssistant
+  geometry: '2000x1000'
+
+carpenter_packages:
+    - carpenter.applications.tutorial
+
+streamlit:
+    security-key: tutorial-security-key
+    new_chat_on_startup: True
+    new_chat_cached: True
+    chat_mode: True
+    delete_old_recorders: 90
+    port: 5002
+    hosts_allowed:
+        - app-proxy.nvidia.com
+        - localhost
+        - .*
+    feedback_view: false
+
+exec:
+    tool: Factorial
+    llm: llama33_70b
+    max_turns: 10
+    test_setup: carpenter.tests.factorial.test_setup
+    outputs:
+      factorial: "Factorial is:"
+
+mcp_tools:
+    - Factorial
+    - SquareRootTool
+
+example_queries:
+    - What is 11 factorial?
+    - What is 12 factorial?

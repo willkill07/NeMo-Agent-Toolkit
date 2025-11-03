@@ -1,0 +1,27 @@
+# Example NAT Configuration using CarpenterFunction
+# This shows how to integrate Carpenter workflows into NAT
+
+workflow:
+  carpenter_workflow:
+    name: carpenter
+    config_file: examples/simple_carpenter_config.yml
+    llm: llama31_70b
+    max_turns: 50
+    disable_requires_confirmation: true
+
+# You can also use the carpenter function in a more complex workflow
+# For example, as part of a chain of functions:
+#
+# functions:
+#   preprocessor:
+#     name: some_preprocessing_function
+#     # ... config
+#   
+#   carpenter_agent:
+#     name: carpenter
+#     config_file: path/to/carpenter_config.yml
+#   
+#   postprocessor:
+#     name: some_postprocessing_function
+#     # ... config
+
